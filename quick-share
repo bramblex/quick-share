@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+'use strict';
+
+require('shelljs/global')
+const os = require('os')
+const path = require('path')
+const open = require('open')
+const ip = require('ip')
+const httpServer = require('http-server')
+const qrcode = require('qrcode-terminal')
+const portfinder = require('portfinder')
+
+const share_dir = path.join(os.homedir(), 'share-dir')
+mkdir('-p', share_dir)
+
+touch(path.join(share_dir, '请在此处放置需要共享的文件.txt'))
+
+
+const server = httpServer.createServer({
+  root: share_dir,
+})
+
+portfinder.getPort(function (err, port) {
+
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`Static server start up at '${share_dir}'.`)
+    console.log(`Listen at ${ip.address()}:${port}.`)
+    qrcode.generate(`http://${ip.address()}:${port}`, code => {
+      console.log(code)
+      open(share_dir)
+    })
+  })
+
+})
