@@ -6,29 +6,41 @@ const os = require('os')
 const path = require('path')
 const open = require('open')
 const ip = require('ip')
-const httpServer = require('http-server')
 const qrcode = require('qrcode-terminal')
 const portfinder = require('portfinder')
+
+var http = require('http');
+var connect = require('connect');
+var serveStatic = require('serve-static');
+var serveIndex = require('serve-index');
 
 const share_dir = path.join(os.homedir(), 'share-dir')
 mkdir('-p', share_dir)
 
 touch(path.join(share_dir, '请在此处放置需要共享的文件.txt'))
 
-
-const server = httpServer.createServer({
-  root: share_dir,
-})
-
 portfinder.getPort(function (err, port) {
 
-  server.listen(port, '0.0.0.0', () => {
-    console.log(`Static server start up at '${share_dir}'.`)
-    console.log(`Listen at ${ip.address()}:${port}.`)
-    qrcode.generate(`http://${ip.address()}:${port}`, code => {
-      console.log(code)
-      open(share_dir)
+  const app = connect()
+
+  app
+    .use(function (req, res, next) {
+      res.setHeader("Access-Control-Allow-Origin", "*")
+      next()
     })
-  })
+    .use(serveStatic(share_dir, { 'index': ['index.html'] }))
+    .use(serveIndex(share_dir, { 'icons': true }))
+
+  http
+    .createServer(app)
+    .listen(port, function () {
+      console.log(`Static server start up at '${share_dir}'.`)
+      console.log(`Listen at ${ip.address()}:${port}.`)
+      qrcode.generate(`http://${ip.address()}:${port}`, code => {
+        console.log(code)
+        open(share_dir)
+      })
+    })
 
 })
+
