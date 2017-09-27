@@ -8,11 +8,13 @@ const open = require('open')
 const ip = require('ip')
 const qrcode = require('qrcode-terminal')
 const portfinder = require('portfinder')
+const alert = require('alert-node')
 
-var http = require('http');
-var connect = require('connect');
-var serveStatic = require('serve-static');
-var serveIndex = require('serve-index');
+const http = require('http')
+const connect = require('connect')
+const serveStatic = require('serve-static')
+const serveIndex = require('serve-index')
+const simpleGet = require('simple-get')
 
 const share_dir = path.join(os.homedir(), 'share-dir')
 mkdir('-p', share_dir)
@@ -34,12 +36,23 @@ portfinder.getPort(function (err, port) {
   http
     .createServer(app)
     .listen(port, function () {
+      const uri = `${ip.address()}:${port}` 
       console.log(`Static server start up at '${share_dir}'.`)
-      console.log(`Listen at ${ip.address()}:${port}.`)
-      qrcode.generate(`http://${ip.address()}:${port}`, code => {
+      console.log(`Listen at ${uri}.`)
+      qrcode.generate(`http://${uri}`, code => {
         console.log(code)
         open(share_dir)
       })
+
+
+      if (os.platform() === 'win32') {
+        simpleGet({ url: `http://${uri}`, timeout: 3e3 }, (err, res) => {
+          if (err) {
+            alert('网络受限', '若弹出防火墙窗口，请允许程序外网访问。若没有弹出，请手动在 “控制面板”->“系统和安全”->“windows防火墙” 中为程序开启外网访问权限。')
+          }
+        })
+      }
+
     })
 
 })
